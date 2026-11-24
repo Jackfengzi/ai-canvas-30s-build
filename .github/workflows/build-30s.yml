@@ -73,10 +73,13 @@ jobs:
         run: npm ci
 
       # 不传 --config，让 tauri 按官方 beforeBuildCommand 自动构建前端与 mcp 资源
+      # --no-default-features 关闭 local-onnx: ort-sys 需要连 cdn.pyke.io 下载 ONNX Runtime,
+      # GitHub Actions 美国机房连不上会编译失败。这正是官方 Legacy 包的做法(不含本地 ONNX),
+      # 不影响视频生成时长改动。代码内有 #[cfg(feature="local-onnx")] 完整守卫与 fallback。
       - name: Build Windows installer
         shell: pwsh
         run: |
-          npx tauri build
+          npx tauri build --no-default-features
           if ($LASTEXITCODE -ne 0) { throw "tauri build failed: $LASTEXITCODE" }
 
       - name: Collect installer

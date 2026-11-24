@@ -1,0 +1,105 @@
+# AI Canvas v0.11.11 - 生成时长 15s->30s · 构建 macOS Apple Silicon (arm64) DMG
+#
+# 源码固定官方 tag v0.11.11；补丁已 base64 内嵌，无需上传其它文件。
+name: Build 30s macOS DMG (arm64)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos:
+    # macos-14 是 Apple Silicon (arm64) runner
+    runs-on: macos-14
+    timeout-minutes: 120
+    steps:
+      - name: Checkout official v0.11.11
+        uses: actions/checkout@v4
+        with:
+          repository: Tenney95/AI-Canvas-tauri
+          ref: v0.11.11
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust (aarch64-apple-darwin)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri
+
+      # 内嵌 Python 补丁脚本解码执行（三处改动 + 校验，任一失败即中止）
+      - name: Apply 30s duration patch
+        shell: bash
+        run: |
+          python3 -c "import base64,sys;open('/tmp/patch.py','wb').write(base64.b64decode(sys.argv[1]))" IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoiIiJhcHBseS0zMHMtcGF0Y2gucHkg4oCUIOeUn+aIkOaXtumVvyAxNXMgLT4gMzBzIOihpeS4ge+8iOi3qOW5s+WPsO+8jOWcqOS7k+W6k+agueebruW9leaJp+ihjO+8iSIiIgpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKCgpkZWYgcmVhZF9ub3JtKHApOgogICAgcmV0dXJuIFBhdGgocCkucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpLnJlcGxhY2UoIlxyXG4iLCAiXG4iKQoKCmRlZiB3cml0ZShwLCBzKToKICAgIFBhdGgocCkud3JpdGVfdGV4dChzLCBlbmNvZGluZz0idXRmLTgiKQoKCiMgMSkg5YWo5bGA5LiK6ZmQ5bi46YePIDE1IC0+IDMwCmYxID0gInNyYy9zZXJ2aWNlcy9haURpbWVuc2lvbnMudHMiCnMgPSByZWFkX25vcm0oZjEpCnMgPSBzLnJlcGxhY2UoImV4cG9ydCBjb25zdCBWSURFT19EVVJBVElPTl9NQVhfU0VDT05EUyA9IDE1OyIsICJleHBvcnQgY29uc3QgVklERU9fRFVSQVRJT05fTUFYX1NFQ09ORFMgPSAzMDsiKQpzID0gcy5yZXBsYWNlKCLpgJrnlKjop4bpopHorr7nva7nmoQgMTVzIOS4iumZkCIsICLpgJrnlKjop4bpopHorr7nva7nmoQgMzBzIOS4iumZkCIpCnMgPSBzLnJlcGxhY2UoIuWPr+imhueblumAmueUqCAxNXMg5LiK6ZmQIiwgIuWPr+imhueblumAmueUqCAzMHMg5LiK6ZmQIikKd3JpdGUoZjEsIHMpCmFzc2VydCAiVklERU9fRFVSQVRJT05fTUFYX1NFQ09ORFMgPSAzMCIgaW4gcywgInBhdGNoMSBjb25zdGFudCIKYXNzZXJ0ICLpgJrnlKjop4bpopHorr7nva7nmoQgMTVzIOS4iumZkCIgbm90IGluIHMsICJwYXRjaDEgY29tbWVudCIKcHJpbnQoIlsxLzNdIGFpRGltZW5zaW9ucy50cyBPSyIpCgojIDIpIEF1dG9ETCBIMyB3b3JrZmxvdy1hcGkg5LiK6ZmQ5LiO5oql6ZSZ5paH5qGICmYyID0gInNyYy9zZXJ2aWNlcy93b3JrZmxvd0FwaS9hdXRvZGxXb3JrZmxvd01hbmlmZXN0LnRzIgpzID0gcmVhZF9ub3JtKGYyKQpzID0gcy5yZXBsYWNlKCJtaW5EdXJhdGlvbjogMSwgbWF4RHVyYXRpb246IDE1LCIsICJtaW5EdXJhdGlvbjogMSwgbWF4RHVyYXRpb246IDMwLCIpCnMgPSBzLnJlcGxhY2UoIuinhumikeaXtumVv+W/hemhu+aYryAx4oCTMTUg56eS55qE5pW05pWwIiwgIuinhumikeaXtumVv+W/hemhu+aYryAx4oCTMzAg56eS55qE5pW05pWwIikKd3JpdGUoZjIsIHMpCmFzc2VydCAibWF4RHVyYXRpb246IDMwIiBpbiBzLCAicGF0Y2gyIG1heER1cmF0aW9uIgphc3NlcnQgIjHigJMzMCDnp5LnmoTmlbTmlbAiIGluIHMsICJwYXRjaDIgZXJyb3IgdGV4dCIKcHJpbnQoIlsyLzNdIGF1dG9kbFdvcmtmbG93TWFuaWZlc3QudHMgT0siKQoKIyAzKSDmu5HlnZfliLvluqbvvJrlpKfot6jluqbmr48gNSDnp5LmlbTliLvluqbvvIgyLzUvMTAvMTUvMjAvMjUvMzDvvIkKZjMgPSAic3JjL2NvbXBvbmVudHMvbm9kZXMvc2hhcmVkL1ZpZGVvUGFyYW1TZWxlY3Rvci50c3giCnMgPSByZWFkX25vcm0oZjMpCm9sZCA9ICIiIiAgLy8g5qCH562+5oyJ6Leo5bqm562J6Led5oq95qC377yM5L+d6K+B5pWw5a2X5LmL6Ze05pyJ6Laz5aSf6Ze06Led5LiN6YeN5Y+g77yaCiAgLy8g6Leo5bqmIOKJpDjvvIjlpoIgNH4xMu+8ieavj+enkumDveagh++8m+KJpDE277yI5aaCIDR+MTUvNH4yMO+8ieavjyAycyDmoIfkuIDkuKrvvJsKICAvLyDmm7TlpKfvvIjlpoIgMi41IOeahCA0fjMw77yJ5q+PIDRzIOagh+S4gOS4quOAguerr+eCuSBtaW4vbWF4IOWni+e7iOagh+OAggogIGNvbnN0IGR1cmF0aW9uU3BhbiA9IE1hdGgubWF4KDEsIG1heER1cmF0aW9uIC0gbWluRHVyYXRpb24pOwogIGNvbnN0IGxhYmVsU3RlcCA9IGR1cmF0aW9uU3BhbiA8PSA4ID8gMSA6IGR1cmF0aW9uU3BhbiA8PSAxNiA/IDIgOiA0OwogIGNvbnN0IGR1cmF0aW9uTGFiZWxWYWx1ZXMgPSBuZXcgU2V0PG51bWJlcj4oKTsKICBmb3IgKGxldCB2ID0gbWluRHVyYXRpb247IHYgPD0gbWF4RHVyYXRpb247IHYgKz0gbGFiZWxTdGVwKSB7CiAgICBkdXJhdGlvbkxhYmVsVmFsdWVzLmFkZCh2KTsKICB9CiAgZHVyYXRpb25MYWJlbFZhbHVlcy5hZGQobWF4RHVyYXRpb24pOwoiIiIKbmV3ID0gIiIiICAvLyDmoIfnrb7mjInot6jluqbmir3moLfvvIzkv53or4HmlbDlrZfkuYvpl7TmnInotrPlpJ/pl7Tot53kuI3ph43lj6DvvJoKICAvLyDot6jluqYg4omkOO+8iOWmgiA0fjEy77yJ5q+P56eS6YO95qCH77yb4omkMTbvvIjlpoIgNH4xNS80fjIw77yJ5q+PIDJzIOagh+S4gOS4qu+8mwogIC8vIOabtOWkp++8iOWmgiAyfjMw77yJ5oyJIDVzIOaVtOWIu+W6puagh++8iDUvMTAvMTUvMjAvMjUvMzDvvInvvIzlsL7mrrXor7vmlbDmuIXmmbDvvIzlubbkv53nlZnotbfngrnjgIIKICAvLyDnq6/ngrkgbWluL21heCDlp4vnu4jmoIfjgIIKICBjb25zdCBkdXJhdGlvblNwYW4gPSBNYXRoLm1heCgxLCBtYXhEdXJhdGlvbiAtIG1pbkR1cmF0aW9uKTsKICBjb25zdCBkdXJhdGlvbkxhYmVsVmFsdWVzID0gbmV3IFNldDxudW1iZXI+KCk7CiAgaWYgKGR1cmF0aW9uU3BhbiA8PSA4KSB7CiAgICBmb3IgKGxldCB2ID0gbWluRHVyYXRpb247IHYgPD0gbWF4RHVyYXRpb247IHYgKz0gMSkgZHVyYXRpb25MYWJlbFZhbHVlcy5hZGQodik7CiAgfSBlbHNlIGlmIChkdXJhdGlvblNwYW4gPD0gMTYpIHsKICAgIGZvciAobGV0IHYgPSBtaW5EdXJhdGlvbjsgdiA8PSBtYXhEdXJhdGlvbjsgdiArPSAyKSBkdXJhdGlvbkxhYmVsVmFsdWVzLmFkZCh2KTsKICB9IGVsc2UgewogICAgZm9yIChsZXQgdiA9IE1hdGguY2VpbChtaW5EdXJhdGlvbiAvIDUpICogNTsgdiA8PSBtYXhEdXJhdGlvbjsgdiArPSA1KSBkdXJhdGlvbkxhYmVsVmFsdWVzLmFkZCh2KTsKICAgIGR1cmF0aW9uTGFiZWxWYWx1ZXMuYWRkKG1pbkR1cmF0aW9uKTsKICB9CiAgZHVyYXRpb25MYWJlbFZhbHVlcy5hZGQobWF4RHVyYXRpb24pOwoiIiIKYXNzZXJ0IG9sZCBpbiBzLCAicGF0Y2gzIG9yaWdpbmFsIGJsb2NrIG5vdCBmb3VuZCIKcyA9IHMucmVwbGFjZShvbGQsIG5ldykKd3JpdGUoZjMsIHMpCmFzc2VydCAi5oyJIDVzIOaVtOWIu+W6piIgaW4gcywgInBhdGNoMyBuZXcgYmxvY2siCmFzc2VydCAiY29uc3QgbGFiZWxTdGVwIiBub3QgaW4gcywgInBhdGNoMyBvbGQgbGFiZWxTdGVwIHJlbWFpbnMiCnByaW50KCJbMy8zXSBWaWRlb1BhcmFtU2VsZWN0b3IudHN4IE9LIikKCnByaW50KCJBTEwgUEFUQ0hFUyBBUFBMSUVEIEFORCBWRVJJRklFRC4iKQo=
+          python3 /tmp/patch.py
+
+      # 就地改 tauri.conf.json：关 updater、只打 dmg（macOS 无需签名私钥）
+      - name: Adjust bundle config (DMG only)
+        shell: bash
+        run: |
+          python3 <<'PYEOF'
+          import json
+          p = 'src-tauri/tauri.conf.json'
+          with open(p, encoding='utf-8') as f:
+              j = json.load(f)
+          j['bundle']['createUpdaterArtifacts'] = False
+          j['bundle']['targets'] = 'dmg'
+          j.get('plugins', {}).pop('updater', None)
+          with open(p, 'w', encoding='utf-8') as f:
+              json.dump(j, f, indent=2, ensure_ascii=False)
+          print('targets =', j['bundle']['targets'], '| updater removed =', 'updater' not in j.get('plugins', {}))
+          PYEOF
+
+      # 关掉 local-onnx：ort-sys 要连 cdn.pyke.io 下载 ONNX Runtime，CI 连不上会编译失败。
+      # 代码内 #[cfg(feature="local-onnx")] 有完整守卫与 fallback，不影响时长改动。
+      - name: Disable local-onnx feature
+        shell: bash
+        run: |
+          python3 <<'PYEOF'
+          from pathlib import Path
+          p = 'src-tauri/Cargo.toml'
+          s = Path(p).read_text(encoding='utf-8')
+          before = s
+          s = s.replace('default = ["local-onnx"]', 'default = []')
+          if s == before:
+              raise SystemExit('Cargo.toml default feature line not found')
+          Path(p).write_text(s, encoding='utf-8')
+          print('local-onnx disabled:', 'default = []' in s)
+          PYEOF
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build macOS DMG
+        shell: bash
+        run: npx tauri build
+
+      - name: Collect DMG
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          found=$(find src-tauri/target/release/bundle -type f -name '*.dmg' | head -1)
+          if [ -z "$found" ]; then echo 'No DMG produced' >&2; exit 1; fi
+          cp "$found" artifacts/
+          echo "Found: $found"
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Canvas-30s-macos-arm64-dmg
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 30

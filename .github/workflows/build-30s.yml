@@ -64,9 +64,11 @@ jobs:
           const j = JSON.parse(fs.readFileSync(p, 'utf8'));
           j.bundle.createUpdaterArtifacts = false;
           j.bundle.targets = 'nsis';
-          delete j.plugins.updater;
+          // lib.rs 仍注册 updater 插件,删掉 plugins.updater 会让插件初始化 panic
+          // 保留官方 pubkey 结构但清空 endpoints: check() 永远返回无更新,不会升级覆盖改动
+          j.plugins.updater.endpoints = [];
           fs.writeFileSync(p, JSON.stringify(j, null, 2));
-          console.log('bundle.targets =', j.bundle.targets, '| updater removed =', !j.plugins.updater);
+          console.log('bundle.targets =', j.bundle.targets, '| updater endpoints =', JSON.stringify(j.plugins.updater.endpoints));
           NODEEOF
 
       # 关掉 local-onnx 默认 feature: ort-sys 构建时要连 cdn.pyke.io 下载 ONNX Runtime,

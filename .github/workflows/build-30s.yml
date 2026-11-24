@@ -1,0 +1,97 @@
+# AI Canvas v0.11.11 - 生成时长 15s->30s · 一键构建 Windows 安装包
+#
+# ===== 用法（3 步，全程 GitHub 网页操作，不需要本地 Windows）=====
+#  1. 打开 https://github.com/Tenney95/AI-Canvas-tauri 点 Fork 到自己账号
+#  2. 在 fork 里新建 .github/workflows/build-30s.yml，把本文件全部内容粘进去提交
+#  3. Actions 页 -> 选 "Build 30s Windows Installer" -> Run workflow
+#     约 20-40 分钟后，在该次运行页底部 Artifacts 下载
+#     "AI-Canvas-30s-windows-exe"，解压即得可直接安装的 .exe
+#
+# 源码固定官方 tag v0.11.11；补丁已 base64 内嵌，无需上传其它文件。
+name: Build 30s Windows Installer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout official v0.11.11
+        uses: actions/checkout@v4
+        with:
+          repository: Tenney95/AI-Canvas-tauri
+          ref: v0.11.11
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri
+
+      # 内嵌补丁脚本解码执行（自带 CRLF 归一化 + 三处改动校验，任一失败即中止）
+      - name: Apply 30s duration patch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $b64 = 'IyBhcHBseS0zMHMtcGF0Y2gucHMxIOKAlCDnlJ/miJDml7bplb8gMTVzIC0+IDMwcyDooaXkuIHvvIjlnKjku5PlupPmoLnnm67lvZXmiafooYzvvIkKIyDnlLEgYnVpbGQtMzBzLXdpbmRvd3MueW1sIOiwg+eUqOOAguaJgOacieabv+aNoumDveWBmuagoemqjO+8jOS7u+S4gOWkhOacquWRveS4reWNs+Wksei0peOAggokRXJyb3JBY3Rpb25QcmVmZXJlbmNlID0gJ1N0b3AnCgpmdW5jdGlvbiBXcml0ZS1VdGY4Tm9Cb20oJHBhdGgsICR0ZXh0KSB7CiAgW0lPLkZpbGVdOjpXcml0ZUFsbFRleHQoJHBhdGgsICR0ZXh0LCAoTmV3LU9iamVjdCBUZXh0LlVURjhFbmNvZGluZyAkZmFsc2UpKQp9CgojIOe7n+S4gOaNouihjOespuS4uiBMRu+8jOS/neivgeWkmuihjOWdl+eyvuehruWMuemFje+8iFdpbmRvd3MgY2hlY2tvdXQg5Y+v6IO95pivIENSTEbvvIkKZnVuY3Rpb24gUmVhZC1Ob3JtYWxpemVkKCRwYXRoKSB7CiAgcmV0dXJuIChHZXQtQ29udGVudCAkcGF0aCAtUmF3IC1FbmNvZGluZyBVVEY4KS5SZXBsYWNlKCJgcmBuIiwgImBuIikKfQoKIyDilIDilIAgMSkg5YWo5bGA5LiK6ZmQ5bi46YePIDE1IC0+IDMw77yIVUkg5ruR5Z2XICsg56eS5pWw5o2i566X6YO95byV55So5a6D77yJ4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiRmMSA9ICdzcmMvc2VydmljZXMvYWlEaW1lbnNpb25zLnRzJwokczEgPSBSZWFkLU5vcm1hbGl6ZWQgJGYxCiRzMSA9ICRzMS5SZXBsYWNlKCdleHBvcnQgY29uc3QgVklERU9fRFVSQVRJT05fTUFYX1NFQ09ORFMgPSAxNTsnLCAnZXhwb3J0IGNvbnN0IFZJREVPX0RVUkFUSU9OX01BWF9TRUNPTkRTID0gMzA7JykKJHMxID0gJHMxLlJlcGxhY2UoJ+mAmueUqOinhumikeiuvue9rueahCAxNXMg5LiK6ZmQJywgJ+mAmueUqOinhumikeiuvue9rueahCAzMHMg5LiK6ZmQJykKJHMxID0gJHMxLlJlcGxhY2UoJ+WPr+imhueblumAmueUqCAxNXMg5LiK6ZmQJywgJ+WPr+imhueblumAmueUqCAzMHMg5LiK6ZmQJykKV3JpdGUtVXRmOE5vQm9tICRmMSAkczEKaWYgKC1ub3QgKFNlbGVjdC1TdHJpbmcgLVBhdGggJGYxIC1QYXR0ZXJuICdWSURFT19EVVJBVElPTl9NQVhfU0VDT05EUyA9IDMwJyAtUXVpZXQpKSB7IHRocm93ICdwYXRjaCAxIGZhaWxlZDogY29uc3RhbnQgbm90IGNoYW5nZWQnIH0KaWYgKFNlbGVjdC1TdHJpbmcgLVBhdGggJGYxIC1QYXR0ZXJuICfpgJrnlKjop4bpopHorr7nva7nmoQgMTVzIOS4iumZkCcgLVF1aWV0KSB7IHRocm93ICdwYXRjaCAxIGZhaWxlZDogY29tbWVudCBub3QgY2hhbmdlZCcgfQpXcml0ZS1Ib3N0ICdbMS8zXSBhaURpbWVuc2lvbnMudHMgT0snCgojIOKUgOKUgCAyKSBBdXRvREwgSDMgd29ya2Zsb3ctYXBpIOWcuuaZr+eahOeLrOeri+S4iumZkOS4juaKpemUmeaWh+ahiCDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKJGYyID0gJ3NyYy9zZXJ2aWNlcy93b3JrZmxvd0FwaS9hdXRvZGxXb3JrZmxvd01hbmlmZXN0LnRzJwokczIgPSBSZWFkLU5vcm1hbGl6ZWQgJGYyCiRzMiA9ICRzMi5SZXBsYWNlKCdtaW5EdXJhdGlvbjogMSwgbWF4RHVyYXRpb246IDE1LCcsICdtaW5EdXJhdGlvbjogMSwgbWF4RHVyYXRpb246IDMwLCcpCiRzMiA9ICRzMi5SZXBsYWNlKCfop4bpopHml7bplb/lv4XpobvmmK8gMeKAkzE1IOenkueahOaVtOaVsCcsICfop4bpopHml7bplb/lv4XpobvmmK8gMeKAkzMwIOenkueahOaVtOaVsCcpCldyaXRlLVV0ZjhOb0JvbSAkZjIgJHMyCmlmICgtbm90IChTZWxlY3QtU3RyaW5nIC1QYXRoICRmMiAtUGF0dGVybiAnbWF4RHVyYXRpb246IDMwJyAtUXVpZXQpKSB7IHRocm93ICdwYXRjaCAyIGZhaWxlZDogbWF4RHVyYXRpb24gbm90IGNoYW5nZWQnIH0KaWYgKC1ub3QgKFNlbGVjdC1TdHJpbmcgLVBhdGggJGYyIC1QYXR0ZXJuICcx4oCTMzAg56eS55qE5pW05pWwJyAtUXVpZXQpKSB7IHRocm93ICdwYXRjaCAyIGZhaWxlZDogZXJyb3IgdGV4dCBub3QgY2hhbmdlZCcgfQpXcml0ZS1Ib3N0ICdbMi8zXSBhdXRvZGxXb3JrZmxvd01hbmlmZXN0LnRzIE9LJwoKIyDilIDilIAgMykg5ruR5Z2X5Yi75bqm77ya5aSn6Leo5bqm5pS55Li65q+PIDUg56eS5pW05Yi75bqm77yIMi81LzEwLzE1LzIwLzI1LzMw77yJ4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiRmMyA9ICdzcmMvY29tcG9uZW50cy9ub2Rlcy9zaGFyZWQvVmlkZW9QYXJhbVNlbGVjdG9yLnRzeCcKJHMzID0gUmVhZC1Ob3JtYWxpemVkICRmMwokb2xkID0gQCcKICAvLyDmoIfnrb7mjInot6jluqbnrYnot53mir3moLfvvIzkv53or4HmlbDlrZfkuYvpl7TmnInotrPlpJ/pl7Tot53kuI3ph43lj6DvvJoKICAvLyDot6jluqYg4omkOO+8iOWmgiA0fjEy77yJ5q+P56eS6YO95qCH77yb4omkMTbvvIjlpoIgNH4xNS80fjIw77yJ5q+PIDJzIOagh+S4gOS4qu+8mwogIC8vIOabtOWkp++8iOWmgiAyLjUg55qEIDR+MzDvvInmr48gNHMg5qCH5LiA5Liq44CC56uv54K5IG1pbi9tYXgg5aeL57uI5qCH44CCCiAgY29uc3QgZHVyYXRpb25TcGFuID0gTWF0aC5tYXgoMSwgbWF4RHVyYXRpb24gLSBtaW5EdXJhdGlvbik7CiAgY29uc3QgbGFiZWxTdGVwID0gZHVyYXRpb25TcGFuIDw9IDggPyAxIDogZHVyYXRpb25TcGFuIDw9IDE2ID8gMiA6IDQ7CiAgY29uc3QgZHVyYXRpb25MYWJlbFZhbHVlcyA9IG5ldyBTZXQ8bnVtYmVyPigpOwogIGZvciAobGV0IHYgPSBtaW5EdXJhdGlvbjsgdiA8PSBtYXhEdXJhdGlvbjsgdiArPSBsYWJlbFN0ZXApIHsKICAgIGR1cmF0aW9uTGFiZWxWYWx1ZXMuYWRkKHYpOwogIH0KICBkdXJhdGlvbkxhYmVsVmFsdWVzLmFkZChtYXhEdXJhdGlvbik7CidACiRuZXcgPSBAJwogIC8vIOagh+etvuaMiei3qOW6puaKveagt++8jOS/neivgeaVsOWtl+S5i+mXtOaciei2s+Wkn+mXtOi3neS4jemHjeWPoO+8mgogIC8vIOi3qOW6piDiiaQ477yI5aaCIDR+MTLvvInmr4/np5Lpg73moIfvvJviiaQxNu+8iOWmgiA0fjE1LzR+MjDvvInmr48gMnMg5qCH5LiA5Liq77ybCiAgLy8g5pu05aSn77yI5aaCIDJ+MzDvvInmjIkgNXMg5pW05Yi75bqm5qCH77yINS8xMC8xNS8yMC8yNS8zMO+8ie+8jOWwvuauteivu+aVsOa4heaZsO+8jOW5tuS/neeVmei1t+eCueOAggogIC8vIOerr+eCuSBtaW4vbWF4IOWni+e7iOagh+OAggogIGNvbnN0IGR1cmF0aW9uU3BhbiA9IE1hdGgubWF4KDEsIG1heER1cmF0aW9uIC0gbWluRHVyYXRpb24pOwogIGNvbnN0IGR1cmF0aW9uTGFiZWxWYWx1ZXMgPSBuZXcgU2V0PG51bWJlcj4oKTsKICBpZiAoZHVyYXRpb25TcGFuIDw9IDgpIHsKICAgIGZvciAobGV0IHYgPSBtaW5EdXJhdGlvbjsgdiA8PSBtYXhEdXJhdGlvbjsgdiArPSAxKSBkdXJhdGlvbkxhYmVsVmFsdWVzLmFkZCh2KTsKICB9IGVsc2UgaWYgKGR1cmF0aW9uU3BhbiA8PSAxNikgewogICAgZm9yIChsZXQgdiA9IG1pbkR1cmF0aW9uOyB2IDw9IG1heER1cmF0aW9uOyB2ICs9IDIpIGR1cmF0aW9uTGFiZWxWYWx1ZXMuYWRkKHYpOwogIH0gZWxzZSB7CiAgICBmb3IgKGxldCB2ID0gTWF0aC5jZWlsKG1pbkR1cmF0aW9uIC8gNSkgKiA1OyB2IDw9IG1heER1cmF0aW9uOyB2ICs9IDUpIGR1cmF0aW9uTGFiZWxWYWx1ZXMuYWRkKHYpOwogICAgZHVyYXRpb25MYWJlbFZhbHVlcy5hZGQobWluRHVyYXRpb24pOwogIH0KICBkdXJhdGlvbkxhYmVsVmFsdWVzLmFkZChtYXhEdXJhdGlvbik7CidACiMgaGVyZS1zdHJpbmcg5YaF6YOo5o2i6KGM5Lmf57uf5LiA5oiQIExGCiRvbGQgPSAkb2xkLlJlcGxhY2UoImByYG4iLCAiYG4iKQokbmV3ID0gJG5ldy5SZXBsYWNlKCJgcmBuIiwgImBuIikKaWYgKC1ub3QgJHMzLkNvbnRhaW5zKCRvbGQpKSB7IHRocm93ICdwYXRjaCAzIGZhaWxlZDogb3JpZ2luYWwgYmxvY2sgbm90IGZvdW5kIChzb3VyY2UgbWlzbWF0Y2gpJyB9CiRzMyA9ICRzMy5SZXBsYWNlKCRvbGQsICRuZXcpCldyaXRlLVV0ZjhOb0JvbSAkZjMgJHMzCmlmICgtbm90IChTZWxlY3QtU3RyaW5nIC1QYXRoICRmMyAtUGF0dGVybiAn5oyJIDVzIOaVtOWIu+W6picgLVF1aWV0KSkgeyB0aHJvdyAncGF0Y2ggMyBmYWlsZWQ6IG5ldyBibG9jayBub3Qgd3JpdHRlbicgfQppZiAoU2VsZWN0LVN0cmluZyAtUGF0aCAkZjMgLVBhdHRlcm4gJ2NvbnN0IGxhYmVsU3RlcCcgLVF1aWV0KSB7IHRocm93ICdwYXRjaCAzIGZhaWxlZDogb2xkIGxhYmVsU3RlcCBzdGlsbCBwcmVzZW50JyB9CldyaXRlLUhvc3QgJ1szLzNdIFZpZGVvUGFyYW1TZWxlY3Rvci50c3ggT0snCgpXcml0ZS1Ib3N0ICdBTEwgUEFUQ0hFUyBBUFBMSUVEIEFORCBWRVJJRklFRC4nCg=='
+          [IO.File]::WriteAllBytes('apply-30s-patch.ps1', [Convert]::FromBase64String($b64))
+          & ./apply-30s-patch.ps1
+
+      # 就地改 tauri.conf.json：关 updater 产物(无官方签名私钥)、只打 NSIS。
+      # 用 node 而非 PowerShell，避免 BOM / 转义 / 深度合并歧义；其余字段原样保留。
+      - name: Adjust bundle config (no signing key, NSIS only)
+        shell: bash
+        run: |
+          node -e "
+          const fs = require('fs');
+          const p = 'src-tauri/tauri.conf.json';
+          const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+          j.bundle.createUpdaterArtifacts = false;
+          j.bundle.targets = 'nsis';
+          delete j.plugins.updater;
+          fs.writeFileSync(p, JSON.stringify(j, null, 2));
+          console.log('bundle.targets =', j.bundle.targets, '| updater removed =', !j.plugins.updater);
+          "
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # 不传 --config，让 tauri 按官方 beforeBuildCommand 自动构建前端与 mcp 资源
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          npx tauri build
+          if ($LASTEXITCODE -ne 0) { throw "tauri build failed: $LASTEXITCODE" }
+
+      - name: Collect installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          $files = Get-ChildItem -Path 'src-tauri/target/release/bundle' -Recurse -Include *.exe -File
+          if (-not $files) { throw 'No NSIS installer produced' }
+          $files | ForEach-Object { Copy-Item $_.FullName artifacts/ -Force; Write-Host "Found: $($_.FullName)" }
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Canvas-30s-windows-exe
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 30

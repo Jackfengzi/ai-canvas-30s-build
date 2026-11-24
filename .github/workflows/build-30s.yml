@@ -58,7 +58,7 @@ jobs:
       - name: Adjust bundle config (no signing key, NSIS only)
         shell: bash
         run: |
-          node -e "
+          node <<'NODEEOF'
           const fs = require('fs');
           const p = 'src-tauri/tauri.conf.json';
           const j = JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -67,7 +67,25 @@ jobs:
           delete j.plugins.updater;
           fs.writeFileSync(p, JSON.stringify(j, null, 2));
           console.log('bundle.targets =', j.bundle.targets, '| updater removed =', !j.plugins.updater);
-          "
+          NODEEOF
+
+      # 关掉 local-onnx 默认 feature: ort-sys 构建时要连 cdn.pyke.io 下载 ONNX Runtime,
+      # GitHub Actions 美国机房连不上会编译失败(官方 Legacy 包也是这样去掉本地 ONNX 的)。
+      # 直接改 Cargo.toml 的 default 列表 (tauri build CLI 不接受 --no-default-features)。
+      # 代码内 #[cfg(feature="local-onnx")] 有完整守卫与 fallback,不影响时长改动。
+      - name: Disable local-onnx feature
+        shell: bash
+        run: |
+          node <<'NODEEOF'
+          const fs = require('fs');
+          const p = 'src-tauri/Cargo.toml';
+          let s = fs.readFileSync(p, 'utf8');
+          const before = s;
+          s = s.replace('default = ["local-onnx"]', 'default = []');
+          if (s === before) throw new Error('Cargo.toml default feature line not found');
+          fs.writeFileSync(p, s);
+          console.log('local-onnx disabled:', s.includes('default = []'));
+          NODEEOF
 
       - name: Install npm dependencies
         run: npm ci
@@ -79,7 +97,7 @@ jobs:
       - name: Build Windows installer
         shell: pwsh
         run: |
-          npx tauri build --no-default-features
+          npx tauri build
           if ($LASTEXITCODE -ne 0) { throw "tauri build failed: $LASTEXITCODE" }
 
       - name: Collect installer
